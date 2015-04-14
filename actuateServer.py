@@ -48,22 +48,6 @@ class ActuationHandler(BaseHTTPRequestHandler):
             return
         doc["_id"] = 0 # Should we add RNQ functionality here?
         doc["toIP"] = ips[0]
-        if "heaters" in doc:
-            if doc["heaters"] < 50:
-                doc["heaters"] = "OFF"
-            else:
-                doc["heaters"] = "ON"
-        if "fans" in doc:
-            if doc["fans"] == 0:
-                doc["fans"] = "OFF"
-            elif doc["fans"] < 25:
-                doc["fans"] = "LOW"
-            elif doc["fans"] < 50:
-                doc["fans"] = "MEDIUM"
-            elif doc["fans"] < 75:
-                doc["fans"] = "HIGH"
-            else:
-                doc["fans"] = "MAX"
         if "header" in doc:
             del doc["header"]
         sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
