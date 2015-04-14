@@ -25,7 +25,11 @@ while True:
     print("From addr {} received {}".format(addr, data))
     unpacked = msgpack.unpackb(data)
 
-    ips = ipmap[unpacked.pop('macaddr')]
+    try:
+        ips = ipmap[unpacked.pop('macaddr')]
+    except:
+        print("Error processing message from socket")
+        continue
     encoded = json.JSONEncoder().encode(unpacked)
     res = requests.post("http://localhost:{0}/".format(ips[2]), json.dumps(encoded))
     if res.status_code != 200:
