@@ -1,5 +1,6 @@
 import json
 from smap import driver, util
+from chairActuator import ChairHeaterActuator
 import time
 from twisted.web.server import Site
 from twisted.web.resource import Resource
@@ -13,6 +14,15 @@ readings = {
     "occupancy": 0
 }
 
+translator = {
+    "OFF": 0,
+    "ON": 100,
+    "LOW": 25,
+    "MEDIUM": 50,
+    "HIGH": 75,
+    "MAX": 100
+}
+
 class ChairResource(Resource):
     isLeaf = True
     def render_GET(self, request):
@@ -24,6 +34,12 @@ class ChairResource(Resource):
         for key in doc:
             if key in readings:
                 readings[key] = doc[key]
+            elif key == "heaters":
+                readings["bottomHeater"] = doc[key]
+                readings["backHeater"] = doc[key]
+            elif key == "fans":
+                readings["bottomFan"] = doc[key]
+                readings["backFan"] = doc[key]
         return 'okay'
 
 factory = Site(ChairResource())
@@ -35,6 +51,8 @@ class PECSChairDriver(driver.SmapDriver):
         self.add_timeseries('/backfan', '%', data_type='long')
         self.add_timeseries('/bottomfan', '%', data_type='long')
         self.add_timeseries('/occupancy', 'binary', data_type='long')
+        #self.add_actuator('/heateract', 'Heater Setting', klass=ChairHeaterActuator, setup={'filename': 'hello'}, read_limit=1, write_limit=1)
+        #self.set_metadata('/heateract', {'actuatable': 'true'})
         self.port = int(opts.get('port', 9001))
 
     def start(self):
