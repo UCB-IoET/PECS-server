@@ -11,4 +11,5 @@ while True:
     received = msgpack.unpackb(data)
     jsonData = json.dumps(received)
     print "Received:", jsonData
-    requests.post("http://localhost:38002", data=jsonData)
+    r = requests.post("http://localhost:38001", data=jsonData)
+    print r.text
