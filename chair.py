@@ -7,10 +7,10 @@ from twisted.web.resource import Resource
 from twisted.internet import reactor
 
 readings = {
-    "backHeater": 0,
-    "bottomHeater": 0,
-    "backFan": 0,
-    "bottomFan": 0,
+    "backh": 0,
+    "bottomh": 0,
+    "backf": 0,
+    "bottomf": 0,
     "occupancy": 0
 }
 
@@ -62,8 +62,8 @@ class PECSChairDriver(driver.SmapDriver):
 
     def poll(self):
         currTime = time.time()
-        self.add('/backheater', currTime, readings['backHeater'])
-        self.add('/bottomheater', currTime, readings['bottomHeater'])
-        self.add('/backfan', currTime, readings['backFan'])
-        self.add('/bottomfan', currTime, readings['bottomFan'])
+        self.add('/backheater', currTime, readings['backh'])
+        self.add('/bottomheater', currTime, readings['bottomh'])
+        self.add('/backfan', currTime, readings['backf'])
+        self.add('/bottomfan', currTime, readings['bottomf'])
         self.add('/occupancy', currTime, 1 if readings['occupancy'] else 0)
