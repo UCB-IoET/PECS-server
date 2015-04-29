@@ -4,6 +4,7 @@ import json
 import msgpack
 import requests
 import socket
+import urlparse
 
 settingMap = {
     "OFF": 0,
@@ -26,10 +27,25 @@ FS_PORT = 60001
     
 class ActuationHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        self.set_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        self.wfile.write('PECS Chair Port Server')
+        try:
+            path, tmp = self.path.split('?', 1)
+            qs = urlparse.parse_qs(tmp)
+            macaddr = qs['macaddr']
+            ips = ipmap[macaddr[0]]
+        except:
+            print "sending 400: invalid"
+            self.send_response(400)
+            return
+        if 'macaddr' in qs:
+            res = requests.get("http://localhost:{0}/".format(ips[2]))
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(res.text)
+        else:
+            print "sending 400: missing"
+            self.send_response(400)
+            return
 
     def do_POST(self):
         doc_recvd = self.rfile.read(int(self.headers['Content-Length']))
@@ -48,7 +64,8 @@ class ActuationHandler(BaseHTTPRequestHandler):
             return
         print "Successfully updated sMAP"
         removeList = []
-        if 'fromFS' in doc:
+        timestamp = int(res.text)
+        if 'fromFS' not in doc:
             for key in doc:
                 if key not in ["backh", "bottomh", "backf", "bottomf", "heaters", "fans"]:
                     removeList.append(key)
@@ -57,16 +74,18 @@ class ActuationHandler(BaseHTTPRequestHandler):
             if len(doc) != 0:
                 doc["_id"] = 0 # Should we add RNQ functionality here?
                 doc["toIP"] = ips[0]
+                doc["time"] = timestamp
                 if "header" in doc:
                     del doc["header"]
                 sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
                 sock.bind(('', 38002))
+                print "Actuating chair"
                 sock.sendto(msgpack.packb(doc), (ips[1], FS_PORT))
                 sock.close()
         self.send_response(200)
         self.send_header('Content-type', 'text/json')
         self.end_headers()
-        self.wfile.write('ok')
+        self.wfile.write(str(timestamp))
 
 serv = HTTPServer(('', 38001), ActuationHandler)
 serv.serve_forever()

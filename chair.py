@@ -27,8 +27,16 @@ translator = {
 
 class ChairResource(Resource):
     isLeaf = True
+    def __init__(self, *args):
+        Resource.__init__(self, *args)
+        self.lastAct = int(time.time())
     def render_GET(self, request):
-        return '<html>Chair data receiver</html>'
+        doc = {"time": self.lastAct,
+                "bottomh": readings["bottomh"],
+                "backh": readings["backh"],
+                "bottomf": readings["bottomf"],
+                "backf": readings["backf"]}
+        return json.dumps(doc)
     def render_POST(self, request):
         doc_recvd = request.content.read()
         print doc_recvd
@@ -42,7 +50,8 @@ class ChairResource(Resource):
             elif key == "fans":
                 readings["bottomFan"] = doc[key]
                 readings["backFan"] = doc[key]
-        return 'okay'
+        self.lastAct = int(time.time())
+        return str(self.lastAct)
 
 factory = Site(ChairResource())
 
