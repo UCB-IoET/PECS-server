@@ -36,6 +36,7 @@ class InitializationHandler(BaseHTTPRequestHandler):
             qs = urlparse.parse_qs(tmp)
             chair_id = qs[ID_KEY]
             chair_id = int(chair_id[0])
+
         except:
             print "sending 400: invalid"
             self.send_response(400)
