@@ -11,7 +11,9 @@ readings = {
     "bottomh": 0,
     "backf": 0,
     "bottomf": 0,
-    "occupancy": 0
+    "occupancy": 0,
+    "temperature": 0.0,
+    "humidity": 0.0
 }
 
 translator = {
@@ -51,6 +53,8 @@ class PECSChairDriver(driver.SmapDriver):
         self.add_timeseries('/backfan', '%', data_type='long')
         self.add_timeseries('/bottomfan', '%', data_type='long')
         self.add_timeseries('/occupancy', 'binary', data_type='long')
+        self.add_timeseries('/temperature', 'Celsius', data_type='double')
+        self.add_timeseries('/humidity', '%', data_type='double')
         #self.add_actuator('/heateract', 'Heater Setting', klass=ChairHeaterActuator, setup={'filename': 'hello'}, read_limit=1, write_limit=1)
         #self.set_metadata('/heateract', {'actuatable': 'true'})
         self.port = int(opts.get('port', 9001))
@@ -67,3 +71,5 @@ class PECSChairDriver(driver.SmapDriver):
         self.add('/backfan', currTime, readings['backf'])
         self.add('/bottomfan', currTime, readings['bottomf'])
         self.add('/occupancy', currTime, 1 if readings['occupancy'] else 0)
+        self.add('/temperature', currTime, readings['temperature'])
+        self.add('/humidity', currTime, readings['humidity'])
