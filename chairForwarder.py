@@ -9,6 +9,7 @@ sock.bind(('', 38003))
 while True:
     data = sock.recv(1024)
     received = msgpack.unpackb(data)
+    received['fromFS'] = True
     jsonData = json.dumps(received)
     print "Received:", jsonData
     r = requests.post("http://localhost:38001", data=jsonData)

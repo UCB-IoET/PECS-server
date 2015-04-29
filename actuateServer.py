@@ -48,20 +48,21 @@ class ActuationHandler(BaseHTTPRequestHandler):
             return
         print "Successfully updated sMAP"
         removeList = []
-        for key in doc:
-            if key not in ["backh", "bottomh", "backf", "bottomf", "heaters", "fans"]:
-                removeList.append(key)
-        for key in removeList:
-            del doc[key]
-        if len(doc) != 0:
-            doc["_id"] = 0 # Should we add RNQ functionality here?
-            doc["toIP"] = ips[0]
-            if "header" in doc:
-                del doc["header"]
-            sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-            sock.bind(('', 38002))
-            sock.sendto(msgpack.packb(doc), (ips[1], FS_PORT))
-            sock.close()
+        if 'fromFS' in doc:
+            for key in doc:
+                if key not in ["backh", "bottomh", "backf", "bottomf", "heaters", "fans"]:
+                    removeList.append(key)
+                for key in removeList:
+                    del doc[key]
+            if len(doc) != 0:
+                doc["_id"] = 0 # Should we add RNQ functionality here?
+                doc["toIP"] = ips[0]
+                if "header" in doc:
+                    del doc["header"]
+                sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+                sock.bind(('', 38002))
+                sock.sendto(msgpack.packb(doc), (ips[1], FS_PORT))
+                sock.close()
         self.send_response(200)
         self.send_header('Content-type', 'text/json')
         self.end_headers()

@@ -1,5 +1,5 @@
 import json
-from smap import driver, util
+from smap import actuate, driver, util
 from chairActuator import ChairHeaterActuator
 import time
 from twisted.web.server import Site
@@ -48,15 +48,24 @@ factory = Site(ChairResource())
 
 class PECSChairDriver(driver.SmapDriver):
     def setup(self, opts):
-        self.add_timeseries('/backheater', '%', data_type='long')
-        self.add_timeseries('/bottomheater', '%', data_type='long')
-        self.add_timeseries('/backfan', '%', data_type='long')
-        self.add_timeseries('/bottomfan', '%', data_type='long')
-        self.add_timeseries('/occupancy', 'binary', data_type='long')
-        self.add_timeseries('/temperature', 'Celsius', data_type='double')
-        self.add_timeseries('/humidity', '%', data_type='double')
+        self.state = readings.copy()
+        backh = self.add_timeseries('/backheater', '%', data_type='long')
+        bottomh = self.add_timeseries('/bottomheater', '%', data_type='long')
+        backf = self.add_timeseries('/backfan', '%', data_type='long')
+        bottomf = self.add_timeseries('/bottomfan', '%', data_type='long')
+        occ = self.add_timeseries('/occupancy', 'binary', data_type='long')
+        temp = self.add_timeseries('/temperature', 'Celsius', data_type='double')
+        hum = self.add_timeseries('/humidity', '%', data_type='double')
         #self.add_actuator('/heateract', 'Heater Setting', klass=ChairHeaterActuator, setup={'filename': 'hello'}, read_limit=1, write_limit=1)
         #self.set_metadata('/heateract', {'actuatable': 'true'})
+        
+        archiver = opts.get('archiver')
+        backh.add_actuator(ChairActuator(chair=self, key="backh", archiver=archiver))
+        bottomh.add_actuator(ChairActuator(chair=self, key="bottomh", archiver=archiver))
+        backf.add_actuator(ChairActuator(chair=self, key="backf", archiver=archiver))
+        bottomf.add_actuator(ChairActuator(chair=self, key="bottomf", archiver=archiver))
+
+
         self.port = int(opts.get('port', 9001))
 
     def start(self):
@@ -65,6 +74,7 @@ class PECSChairDriver(driver.SmapDriver):
         reactor.run()
 
     def poll(self):
+        self.state = readings.copy()
         currTime = time.time()
         self.add('/backheater', currTime, readings['backh'])
         self.add('/bottomheater', currTime, readings['bottomh'])
@@ -73,3 +83,22 @@ class PECSChairDriver(driver.SmapDriver):
         self.add('/occupancy', currTime, 1 if readings['occupancy'] else 0)
         self.add('/temperature', currTime, readings['temperature'])
         self.add('/humidity', currTime, readings['humidity'])
+
+class ChairActuator(actuate.ContinuousIntegerActuator):
+    def __init__(self, **opts):
+        datarange = (0, 100)
+        actuate.SmapActuator.__init__(self, archiver_url=opts['archiver'])
+        actuate.ContinuousIntegerActuator.__init__(self, datarange)
+        self.chair = opts['chair']
+        self.key = opts['key']
+
+    def get_state(self, request):
+        return self.chair.state[self.key]
+
+    def set_state(self, request, state):
+        if not self.valid_state(state):
+            print "WARNING: attempt to set to invalid state", state
+            return self.chair.state[self.key]
+        self.chair.state[self.key] = self.parse_state(state)
+        print "Setting", self.key, "to", state
+        return int(state)
