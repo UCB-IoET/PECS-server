@@ -65,12 +65,16 @@ class ActuationHandler(BaseHTTPRequestHandler):
         print "Successfully updated sMAP"
         removeList = []
         timestamp = int(res.text)
+        if 'fromIP' in doc:
+            ips[0] = doc['fromIP']
+        if 'myIP' in doc:
+            ips[1] = doc['myIP']
         if 'fromFS' not in doc:
             for key in doc:
                 if key not in ["backh", "bottomh", "backf", "bottomf", "heaters", "fans"]:
                     removeList.append(key)
-                for key in removeList:
-                    del doc[key]
+            for key in removeList:
+                del doc[key]
             if len(doc) != 0:
                 doc["_id"] = 0 # Should we add RNQ functionality here?
                 doc["toIP"] = ips[0]
