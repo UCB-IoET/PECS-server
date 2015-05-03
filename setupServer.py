@@ -5,14 +5,33 @@ import requests
 import socket
 import urlparse
 from string import Template
+import ConfigParser
+from uuid import uuid4
+import sqlite3
 
 ID_KEY = 'chairid'
-APP_LINK = 'http://www.android.com'
+APP_LINK = 'http://shell.storm.pm:38003'
+DB_FILE = 'users.db'
+
+parser = ConfigParser.RawConfigParser()
+parser.read('chair.ini')
+for sect in parser.sections():
+    if parser.has_option(sect, 'db_file'):
+        DB_FILE = parser.get(sect, 'db_file')
+    elif parser.has_option(sect, 'android_url'):
+        APP_LINK = parser.get(sect, 'android_url')
+
+db = sqlite3.connect(DB_FILE)
+cursor = db.cursor()
+cursor.execute('''create table if not exists users (uuid TEXT PRIMARY KEY, chairid TEXT)''')
+db.commit()
+db.close()
 
 PAGE_TEMPLATE = Template(Template('''<!DOCTYPE HTML>
 <html lang="en-US">
     <head>
-        <meta name="chairid" content="$chairid">
+        <!--DO NOT DELETE THE BELOW COMMENT-->
+        <!--uuid:$uuid-->
         <meta charset="UTF-8">
         <meta http-equiv="refresh" content="1;url=$app_link">
         <script type="text/javascript">
@@ -26,8 +45,31 @@ PAGE_TEMPLATE = Template(Template('''<!DOCTYPE HTML>
 </html>
 ''').safe_substitute(app_link=APP_LINK))
 
+def add_new_user(chair_id):
+    uuid = str(uuid4())
+    db = sqlite3.connect(DB_FILE)
+    cursor = db.cursor()
+    try:
+        cursor.execute('''INSERT INTO users(uuid, chairid)
+                            VALUES(?,?)''', (uuid, chair_id))
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise e
+    finally:
+        db.close()
+    return uuid
+
+def get_users(chair_id):
+    db = sqlite3.connect(DB_FILE)
+    cursor = db.cursor()
+    cursor.execute('''SELECT uuid FROM users WHERE chairid=?''', (chair_id,))
+    all_rows = cursor.fetchall()
+    print all_rows
+    db.close()
+
 def generate_page(chair_id):
-    return PAGE_TEMPLATE.safe_substitute(chairid=chair_id)
+    return PAGE_TEMPLATE.safe_substitute(uuid=add_new_user(chair_id))
     
 class InitializationHandler(BaseHTTPRequestHandler):
     def do_GET(self):
