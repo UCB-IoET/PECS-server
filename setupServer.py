@@ -69,7 +69,8 @@ def get_users(chair_id):
     db.close()
 
 def generate_page(chair_id):
-    return PAGE_TEMPLATE.safe_substitute(uuid=add_new_user(chair_id))
+    # return PAGE_TEMPLATE.safe_substitute(uuid=add_new_user(chair_id))
+    return PAGE_TEMPLATE.safe_substitute(uuid=uuid4())
     
 class InitializationHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -77,7 +78,6 @@ class InitializationHandler(BaseHTTPRequestHandler):
             path, tmp = self.path.split('?', 1)
             qs = urlparse.parse_qs(tmp)
             chair_id = qs[ID_KEY]
-            chair_id = int(chair_id[0])
 
         except:
             print "sending 400: invalid"
