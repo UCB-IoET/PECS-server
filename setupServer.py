@@ -10,7 +10,9 @@ from uuid import uuid4
 import sqlite3
 
 ID_KEY = 'chairid'
-APP_LINK = 'http://shell.storm.pm:38003'
+ANDROID_LINK = 'https://www.dropbox.com/s/rs9qprdnzo5mog6/chairtalk.apk?dl=1'
+IOS_LINK = 'https://www.developer.apple.com'
+
 DB_FILE = 'users.db'
 
 parser = ConfigParser.RawConfigParser()
@@ -27,7 +29,7 @@ cursor.execute('''create table if not exists users (uuid TEXT PRIMARY KEY, chair
 db.commit()
 db.close()
 
-PAGE_TEMPLATE = Template(Template('''<!DOCTYPE HTML>
+PAGE_TEMPLATE = Template('''<!DOCTYPE HTML>
 <html lang="en-US">
     <head>
         <!--DO NOT DELETE THE BELOW COMMENT-->
@@ -43,7 +45,7 @@ PAGE_TEMPLATE = Template(Template('''<!DOCTYPE HTML>
         If you are not redirected automatically, follow the <a href='$app_link'>link to download app</a>
     </body>
 </html>
-''').safe_substitute(app_link=APP_LINK))
+''')
 
 def add_new_user(chair_id):
     uuid = str(uuid4())
@@ -68,9 +70,14 @@ def get_users(chair_id):
     print all_rows
     db.close()
 
-def generate_page(chair_id):
+def generate_page(chair_id, request):
     # return PAGE_TEMPLATE.safe_substitute(uuid=add_new_user(chair_id))
-    return PAGE_TEMPLATE.safe_substitute(uuid=uuid4())
+    agent = request.headers['user-agent']
+    if 'Android' in agent:
+        agent_sub = ANDROID_LINK
+    else:
+        agent_sub = IOS_LINK
+    return PAGE_TEMPLATE.safe_substitute(uuid=uuid4(), app_link=agent_sub)
     
 class InitializationHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -87,7 +94,7 @@ class InitializationHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            self.wfile.write(generate_page(chair_id))
+            self.wfile.write(generate_page(chair_id, self))
         else:
             print "sending 400: missing"
             self.send_response(400)
