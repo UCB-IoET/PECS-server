@@ -65,8 +65,6 @@ class PECSChairDriver(driver.SmapDriver):
         occ = self.add_timeseries('/occupancy', 'binary', data_type='long')
         temp = self.add_timeseries('/temperature', 'Celsius', data_type='double')
         hum = self.add_timeseries('/humidity', '%', data_type='double')
-        #self.add_actuator('/heateract', 'Heater Setting', klass=ChairHeaterActuator, setup={'filename': 'hello'}, read_limit=1, write_limit=1)
-        #self.set_metadata('/heateract', {'actuatable': 'true'})
         
         archiver = opts.get('archiver')
         backh.add_actuator(ChairActuator(chair=self, key="backh", archiver=archiver))
@@ -84,6 +82,7 @@ class PECSChairDriver(driver.SmapDriver):
         reactor.listenTCP(self.port, factory)
         
     def poll(self):
+        print "Polling a chair driver with port", self.port
         self.state = readings.copy()
         currTime = time.time()
         self.add('/backheater', currTime, readings['backh'])
