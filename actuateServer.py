@@ -71,7 +71,7 @@ class ActuationHandler(BaseHTTPRequestHandler):
         timestamp = int(res.text)
         if 'fromIP' in doc:
             ips[0] = doc['fromIP']
-        if 'fromFS' not in doc:
+        if 'fromFS' not in doc or not doc['fromFS']:
             for key in doc:
                 if key not in ["backh", "bottomh", "backf", "bottomf", "heaters", "fans"]:
                     removeList.append(key)

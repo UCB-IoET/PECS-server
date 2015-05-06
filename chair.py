@@ -37,12 +37,13 @@ class ChairResource(Resource):
         self.lastAct = int(time.time())
     def render_GET(self, request):
         doc = {"time": self.lastAct,
-                "bottomh": readings["bottomh"],
-                "backh": readings["backh"],
-                "bottomf": readings["bottomf"],
-                "backf": readings["backf"]}
+            "bottomh": readings["bottomh"],
+            "backh": readings["backh"],
+            "bottomf": readings["bottomf"],
+            "backf": readings["backf"]}
         return json.dumps(doc)
     def render_POST(self, request):
+        global lasttruevaltime
         doc_recvd = request.content.read()
         print doc_recvd
         doc = json.loads(doc_recvd)
@@ -57,6 +58,7 @@ class ChairResource(Resource):
                 readings["backFan"] = doc[key]
         self.lastAct = int(time.time())
         if "fromFS" in doc and doc["fromFS"]:
+            print "lasttruevaltime"
             lasttruevaltime = self.lastAct
         return str(self.lastAct)
 
@@ -72,7 +74,7 @@ class PECSChairDriver(driver.SmapDriver):
         occ = self.add_timeseries('/occupancy', 'binary', data_type='long')
         temp = self.add_timeseries('/temperature', 'Celsius', data_type='double')
         hum = self.add_timeseries('/humidity', '%', data_type='double')
-        
+
         archiver = opts.get('archiver')
         backh.add_actuator(ChairActuator(chair=self, key="backh", archiver=archiver))
         bottomh.add_actuator(ChairActuator(chair=self, key="bottomh", archiver=archiver))
@@ -82,17 +84,22 @@ class PECSChairDriver(driver.SmapDriver):
 
         self.port = int(opts.get('port', 9001))
         print "Setting up a chair driver with port", self.port
-        
+
     def start(self):
         print "Starting a chair driver with port", self.port
         util.periodicSequentialCall(self.poll).start(5)
         reactor.listenTCP(self.port, factory)
-        
+
     def poll(self):
         print "Polling a chair driver with port", self.port
         self.state = readings.copy()
         currTime = time.time()
+        print currTime
+        print lasttruevaltime
+        print currTime - lasttruevaltime
+        print INACTIVITY_GAP
         if currTime - lasttruevaltime < INACTIVITY_GAP:
+            print "Updating streams"
             self.add('/backheater', currTime, readings['backh'])
             self.add('/bottomheater', currTime, readings['bottomh'])
             self.add('/backfan', currTime, readings['backf'])
