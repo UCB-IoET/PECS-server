@@ -82,8 +82,7 @@ class PECSChairDriver(driver.SmapDriver):
         print "Starting a chair driver with port", self.port
         util.periodicSequentialCall(self.poll).start(5)
         reactor.listenTCP(self.port, factory)
-        reactor.run()
-
+        
     def poll(self):
         self.state = readings.copy()
         currTime = time.time()
