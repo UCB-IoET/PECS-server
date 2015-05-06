@@ -31,7 +31,7 @@ class ActuationHandler(BaseHTTPRequestHandler):
             path, tmp = self.path.split('?', 1)
             qs = urlparse.parse_qs(tmp)
             macaddr = qs['macaddr']
-            ips = ipmap[macaddr[0]]
+            ips = ipmap[macaddr[0].lower()]
         except:
             print "sending 400: invalid"
             self.send_response(400)
@@ -78,14 +78,13 @@ class ActuationHandler(BaseHTTPRequestHandler):
             for key in removeList:
                 del doc[key]
             if len(doc) != 0:
-                doc["_id"] = 0 # Should we add RNQ functionality here?
                 doc["toIP"] = ips[0]
-                doc["time"] = timestamp
                 if "header" in doc:
                     del doc["header"]
                 sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
                 sock.bind(('', 38002))
                 print "Actuating chair"
+                print "IP", ips[1]
                 sock.sendto(msgpack.packb(doc), (ips[1], FS_PORT))
                 sock.close()
         self.send_response(200)
