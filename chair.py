@@ -6,6 +6,9 @@ from twisted.web.server import Site
 from twisted.web.resource import Resource
 from twisted.internet import reactor
 
+# Consider data to be unknown if no FS data is received for this many seconds
+INACTIVITY_GAP = 25
+
 readings = {
     "backh": 0,
     "bottomh": 0,
@@ -24,6 +27,8 @@ translator = {
     "HIGH": 75,
     "MAX": 100
 }
+
+lasttruevaltime = 0
 
 class ChairResource(Resource):
     isLeaf = True
@@ -51,6 +56,8 @@ class ChairResource(Resource):
                 readings["bottomFan"] = doc[key]
                 readings["backFan"] = doc[key]
         self.lastAct = int(time.time())
+        if "fromFS" in doc and doc["fromFS"]:
+            lasttruevaltime = self.lastAct
         return str(self.lastAct)
 
 factory = Site(ChairResource())
@@ -85,13 +92,14 @@ class PECSChairDriver(driver.SmapDriver):
         print "Polling a chair driver with port", self.port
         self.state = readings.copy()
         currTime = time.time()
-        self.add('/backheater', currTime, readings['backh'])
-        self.add('/bottomheater', currTime, readings['bottomh'])
-        self.add('/backfan', currTime, readings['backf'])
-        self.add('/bottomfan', currTime, readings['bottomf'])
-        self.add('/occupancy', currTime, 1 if readings['occupancy'] else 0)
-        self.add('/temperature', currTime, readings['temperature'] / 100.0)
-        self.add('/humidity', currTime, readings['humidity'] / 100.0)
+        if currTime - lasttruevaltime < INACTIVITY_GAP:
+            self.add('/backheater', currTime, readings['backh'])
+            self.add('/bottomheater', currTime, readings['bottomh'])
+            self.add('/backfan', currTime, readings['backf'])
+            self.add('/bottomfan', currTime, readings['bottomf'])
+            self.add('/occupancy', currTime, 1 if readings['occupancy'] else 0)
+            self.add('/temperature', currTime, readings['temperature'] / 100.0)
+            self.add('/humidity', currTime, readings['humidity'] / 100.0)
 
 class ChairActuator(actuate.ContinuousIntegerActuator):
     def __init__(self, **opts):
