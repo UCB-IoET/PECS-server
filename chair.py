@@ -76,8 +76,10 @@ class PECSChairDriver(driver.SmapDriver):
 
 
         self.port = int(opts.get('port', 9001))
-
+        print "Setting up a chair driver with port", self.port
+        
     def start(self):
+        print "Starting a chair driver with port", self.port
         util.periodicSequentialCall(self.poll).start(5)
         reactor.listenTCP(self.port, factory)
         reactor.run()
@@ -90,8 +92,8 @@ class PECSChairDriver(driver.SmapDriver):
         self.add('/backfan', currTime, readings['backf'])
         self.add('/bottomfan', currTime, readings['bottomf'])
         self.add('/occupancy', currTime, 1 if readings['occupancy'] else 0)
-        self.add('/temperature', currTime, readings['temperature'])
-        self.add('/humidity', currTime, readings['humidity'])
+        self.add('/temperature', currTime, readings['temperature'] / 100.0)
+        self.add('/humidity', currTime, readings['humidity'] / 100.0)
 
 class ChairActuator(actuate.ContinuousIntegerActuator):
     def __init__(self, **opts):

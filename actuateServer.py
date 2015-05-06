@@ -48,14 +48,18 @@ class ActuationHandler(BaseHTTPRequestHandler):
             return
 
     def do_POST(self):
+        print self.headers
         doc_recvd = self.rfile.read(int(self.headers['Content-Length']))
+        print doc_recvd
         try:
             doc = json.loads(doc_recvd)
             macaddr = doc.pop('macaddr')
             ips = ipmap[macaddr]
         except:
+            print "Invalid JSON or Mac Address"
             self.send_response(400)
             return
+        print ips
         res = requests.post("http://localhost:{0}/".format(ips[2]), json.dumps(doc))
         if res.status_code != 200:
             self.send_response(404)
@@ -67,8 +71,6 @@ class ActuationHandler(BaseHTTPRequestHandler):
         timestamp = int(res.text)
         if 'fromIP' in doc:
             ips[0] = doc['fromIP']
-        if 'myIP' in doc:
-            ips[1] = doc['myIP']
         if 'fromFS' not in doc:
             for key in doc:
                 if key not in ["backh", "bottomh", "backf", "bottomf", "heaters", "fans"]:
