@@ -28,13 +28,14 @@ translator = {
     "MAX": 100
 }
 
-lasttruevaltime = 0
+port = None
 
 class ChairResource(Resource):
     isLeaf = True
     def __init__(self, *args):
         Resource.__init__(self, *args)
         self.lastAct = int(time.time())
+        self.lasttruevaltime = 0
     def render_GET(self, request):
         doc = {"time": self.lastAct,
             "bottomh": readings["bottomh"],
@@ -43,9 +44,9 @@ class ChairResource(Resource):
             "backf": readings["backf"]}
         return json.dumps(doc)
     def render_POST(self, request):
-        global lasttruevaltime
         doc_recvd = request.content.read()
         print doc_recvd
+        print "Got JSON at port", port
         doc = json.loads(doc_recvd)
         for key in doc:
             if key in readings:
@@ -58,11 +59,9 @@ class ChairResource(Resource):
                 readings["backFan"] = doc[key]
         self.lastAct = int(time.time())
         if "fromFS" in doc and doc["fromFS"]:
-            print "lasttruevaltime"
-            lasttruevaltime = self.lastAct
+            print "lasttruevaltime", port
+            self.lasttruevaltime = self.lastAct
         return str(self.lastAct)
-
-factory = Site(ChairResource())
 
 class PECSChairDriver(driver.SmapDriver):
     def setup(self, opts):
@@ -81,24 +80,29 @@ class PECSChairDriver(driver.SmapDriver):
         backf.add_actuator(ChairActuator(chair=self, key="backf", archiver=archiver))
         bottomf.add_actuator(ChairActuator(chair=self, key="bottomf", archiver=archiver))
 
-
         self.port = int(opts.get('port', 9001))
+
+        global port
+        port = self.port
         print "Setting up a chair driver with port", self.port
+
+        self.resource = ChairResource()
+        self.factory = Site(self.resource)
 
     def start(self):
         print "Starting a chair driver with port", self.port
         util.periodicSequentialCall(self.poll).start(5)
-        reactor.listenTCP(self.port, factory)
+        reactor.listenTCP(self.port, self.factory)
 
     def poll(self):
         print "Polling a chair driver with port", self.port
         self.state = readings.copy()
         currTime = time.time()
         print currTime
-        print lasttruevaltime
-        print currTime - lasttruevaltime
+        print self.resource.lasttruevaltime
+        print currTime - self.resource.lasttruevaltime
         print INACTIVITY_GAP
-        if currTime - lasttruevaltime < INACTIVITY_GAP:
+        if currTime - self.resource.lasttruevaltime < INACTIVITY_GAP:
             print "Updating streams"
             self.add('/backheater', currTime, readings['backh'])
             self.add('/bottomheater', currTime, readings['bottomh'])
