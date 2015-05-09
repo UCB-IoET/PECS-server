@@ -11,7 +11,7 @@ import sqlite3
 
 ID_KEY = 'chairid'
 ANDROID_LINK = 'https://www.dropbox.com/s/rs9qprdnzo5mog6/chairtalk.apk?dl=1'
-IOS_LINK = 'https://www.developer.apple.com'
+IOS_LINK = 'https://developer.apple.com'
 
 DB_FILE = 'users.db'
 
