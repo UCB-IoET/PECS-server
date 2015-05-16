@@ -66,6 +66,7 @@ class ChairResource(Resource):
 class PECSChairDriver(driver.SmapDriver):
     def setup(self, opts):
         self.state = readings.copy()
+        self.macaddr = opts.get("macaddr")
         backh = self.add_timeseries('/backheater', '%', data_type='long')
         bottomh = self.add_timeseries('/bottomheater', '%', data_type='long')
         backf = self.add_timeseries('/backfan', '%', data_type='long')
@@ -124,9 +125,11 @@ class ChairActuator(actuate.ContinuousIntegerActuator):
         return self.chair.state[self.key]
 
     def set_state(self, request, state):
+        print "GOT REQUEST:", self.key, state
         if not self.valid_state(state):
             print "WARNING: attempt to set to invalid state", state
             return self.chair.state[self.key]
-        self.chair.state[self.key] = self.parse_state(state)
+        doc = {self.key: self.parse_state(state), "macaddr": self.chair.macaddr}
+        requests.post("http://localhost:38001/", json.dumps(doc))
         print "Setting", self.key, "to", state
         return int(state)
