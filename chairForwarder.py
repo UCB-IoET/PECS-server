@@ -6,9 +6,15 @@ import socket
 sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
 sock.bind(('', 38003))
 
+lastmsgids = {} # Emulate some RNQ Server functionality
+
 while True:
     data, addr = sock.recvfrom(1024)
     received = msgpack.unpackb(data)
+    msgid = data["_id"]
+    if msgid == lastmsgids.get(addr, None): # this is a retransmission
+        continue
+    lastmsgids[addr] = msgid
     newmsg = {}
     newmsg['macaddr'] = hex(received[1])[-4:]
     newmsg['occupancy'] = received[2]
@@ -24,3 +30,6 @@ while True:
     print "Received:", jsonData
     r = requests.post("http://localhost:38001", data=jsonData)
     print r.text
+
+    resp = msgpack.packb({"_id": msgid})
+    sock.sendto(resp, addr) # Send ACK
