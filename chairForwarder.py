@@ -3,6 +3,7 @@ import msgpack
 import requests
 import rnq
 import socket
+import time
 
 def handlemsg(received, addr):
     newmsg = {}
@@ -22,3 +23,6 @@ def handlemsg(received, addr):
     print r.text
 
 listener = rnq.RNQServer(38003, handlemsg)
+
+while True:
+    time.sleep(60)
