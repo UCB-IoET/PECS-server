@@ -3,6 +3,7 @@ import ConfigParser
 import json
 import msgpack
 import requests
+import rnq
 import socket
 import urlparse
 
@@ -24,7 +25,8 @@ for sect in parser.sections():
         ipmap[parser.get(sect, 'macaddr')] = [parser.get(sect, 'rel_ip'), parser.get(sect, 'dest_ip'), parser.get(sect, 'port')]
 
 FS_PORT = 60001
-    
+actuateSender = rnq.RNQClient(38002)
+
 class ActuationHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
@@ -81,12 +83,9 @@ class ActuationHandler(BaseHTTPRequestHandler):
                 doc["toIP"] = ips[0]
                 if "header" in doc:
                     del doc["header"]
-                sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-                sock.bind(('', 38002))
                 print "Actuating chair"
                 print "IP", ips[1]
-                sock.sendto(msgpack.packb(doc), (ips[1], FS_PORT))
-                sock.close()
+                actuateSender.sendMessage(doc, (ips[1], FS_PORT), 100, 0.1, None, None)
         self.send_response(200)
         self.send_header('Content-type', 'text/json')
         self.end_headers()
