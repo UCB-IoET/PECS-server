@@ -5,6 +5,7 @@ import msgpack
 import requests
 import rnq
 import socket
+import sys
 import urlparse
 
 settingMap = {
@@ -22,10 +23,23 @@ parser = ConfigParser.RawConfigParser()
 parser.read('chair.ini')
 for sect in parser.sections():
     if parser.has_option(sect, 'macaddr') and parser.has_option(sect, 'rel_ip') and parser.has_option(sect, 'dest_ip') and parser.has_option(sect, 'port'):
-        ipmap[parser.get(sect, 'macaddr')] = [parser.get(sect, 'rel_ip'), parser.get(sect, 'dest_ip'), parser.get(sect, 'port')]
+        ipmap[parser.get(sect, 'macaddr')] = [parser.get(sect, 'rel_ip'), parser.get(sect, 'dest_ip'), int(parser.get(sect, 'port'))]
 
 FS_PORT = 60001
-actuateSender = rnq.RNQClient(38002)
+
+rnq_assign = {}
+def get_rnqc(macaddr):
+    if macaddr not in ipmap:
+        print "Invalid macaddr"
+    if macaddr in rnq_assign:
+        return rnq_assign[macaddr]
+    else:
+        rnqc = rnq.RNQClient(ipmap[macaddr][2] - 1000)
+        rnq_assign[macaddr] = rnqc
+        return rnqc
+
+def myprint(x):
+    print x
 
 class ActuationHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -85,7 +99,9 @@ class ActuationHandler(BaseHTTPRequestHandler):
                     del doc["header"]
                 print "Actuating chair"
                 print "IP", ips[1]
-                actuateSender.sendMessage(doc, (ips[1], FS_PORT), 100, 0.1, None, None)
+                rnqc = get_rnqc(macaddr)
+                rnqc.back = rnqc.front # pop pending actuations from queue
+                rnqc.sendMessage(doc, (ips[1], FS_PORT), 100, 0.1, lambda: myprint("trying"), lambda msg, addr: myprint(msg))
         self.send_response(200)
         self.send_header('Content-type', 'text/json')
         self.end_headers()
