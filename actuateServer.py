@@ -41,6 +41,8 @@ def get_rnqc(macaddr):
 def myprint(x):
     print x
 
+timesynchronizer = rnq.RNQServer(38002, lambda msg, addr: {"time": time.time()})
+
 class ActuationHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
