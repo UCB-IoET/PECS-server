@@ -21,6 +21,7 @@ def handlemsg(received, addr):
     print "Received:", jsonData
     r = requests.post("http://localhost:38001", data=jsonData)
     print r.text
+    return {"rv": "ok"}
 
 listener = rnq.RNQServer(38003, handlemsg)
 

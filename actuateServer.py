@@ -6,6 +6,7 @@ import requests
 import rnq
 import socket
 import sys
+import time
 import urlparse
 
 settingMap = {

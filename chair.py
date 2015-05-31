@@ -7,7 +7,7 @@ from twisted.web.resource import Resource
 from twisted.internet import reactor
 
 # Consider data to be unknown if no FS data is received for this many seconds
-INACTIVITY_GAP = 25
+INACTIVITY_GAP = 35
 
 readings = {
     "backh": 0,
@@ -92,7 +92,7 @@ class PECSChairDriver(driver.SmapDriver):
 
     def start(self):
         print "Starting a chair driver with port", self.port
-        util.periodicSequentialCall(self.poll).start(5)
+        util.periodicSequentialCall(self.poll).start(15)
         reactor.listenTCP(self.port, self.factory)
 
     def poll(self):
